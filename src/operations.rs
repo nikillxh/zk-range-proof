@@ -1,3 +1,5 @@
+use std::vec;
+
 use curve25519_dalek::{RistrettoPoint, Scalar};
 
 pub fn to_bin(mut v: u64) -> Vec<i64> {
@@ -32,7 +34,12 @@ pub fn scalarize(vector: &mut Vec<i64>) -> Vec<Scalar> {
 }
 
 pub fn inner_product(vector_1: &Vec<Scalar>, vector_2: &Vec<RistrettoPoint>) -> RistrettoPoint {
-    let final = RistrettoPoint::from(Scalar::from(0u8));
+    let mut value = vector_2[0];
 
+    for (a, b) in vector_1.iter().zip(vector_2.iter()) {
+        value = value + (a * b);
+    }
+    value = value - vector_2[0];
 
+    value
 }
