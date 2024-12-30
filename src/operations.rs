@@ -33,6 +33,10 @@ pub fn scalarize(vector: &mut Vec<i64>) -> Vec<Scalar> {
     scalar_vector
 }
 
+pub fn inv_vector(vector: &Vec<Scalar>) -> Vec<Scalar> {
+    vector.iter().map(|x| x.invert()).collect()
+}
+
 pub fn inner_product(vector_1: &Vec<Scalar>, vector_2: &Vec<RistrettoPoint>) -> RistrettoPoint {
     let mut value = vector_2[0];
 
@@ -42,4 +46,24 @@ pub fn inner_product(vector_1: &Vec<Scalar>, vector_2: &Vec<RistrettoPoint>) -> 
     value = value - vector_2[0];
 
     value
+}
+
+pub fn vector_sub(vector1: &Vec<Scalar>, vector2: &Vec<Scalar>) -> Vec<Scalar> {
+    vector1.iter().zip(vector2.into_iter()).map(|(x, y)| x - y).collect()
+}
+
+pub fn vector_add(vector1: &Vec<Scalar>, vector2: &Vec<Scalar>) -> Vec<Scalar> {
+    vector1.iter().zip(vector2.into_iter()).map(|(x, y)| x + y).collect()
+}
+
+pub fn hadamard_multiply(vector1: &Vec<Scalar>, vector2: &Vec<Scalar>) -> Vec<Scalar> {
+    vector1.iter().zip(vector2.into_iter()).map(|(x, y)| x * y).collect()
+}
+
+pub fn points_hadamard_multiply(vector1: &Vec<Scalar>, vector2: &Vec<RistrettoPoint>) -> Vec<RistrettoPoint> {
+    vector1.iter().zip(vector2.into_iter()).map(|(x, y)| x * y).collect()
+}
+
+pub fn vec_scalar_mul(vector: &Vec<Scalar>, scalar: &Scalar) -> Vec<Scalar> {
+    vector.iter().map(|x| x * scalar).collect()
 }
