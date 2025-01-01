@@ -1,6 +1,6 @@
-use std::vec;
+use std::{ops::Mul, vec};
 
-use curve25519_dalek::{RistrettoPoint, Scalar};
+use curve25519_dalek::{traits::Identity, RistrettoPoint, Scalar};
 
 pub fn to_bin(mut v: u64) -> Vec<i64> {
     let mut al: Vec<i64> = vec![];
@@ -46,6 +46,36 @@ pub fn inner_product(vector_1: &Vec<Scalar>, vector_2: &Vec<RistrettoPoint>) -> 
     value = value - vector_2[0];
 
     value
+}
+
+pub fn diagonal_ss_sum(vector1: &mut Vec<Scalar>, vector2: &mut Vec<Scalar> ) -> Scalar {
+    if vector1.len() % 2 !=0 {
+        vector1.insert(0, Scalar::from(0u8));
+        vector2.insert(0, Scalar::from(0u8));
+    }
+    let vec1:Vec<Scalar> = vector1.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
+    let vec2:Vec<Scalar> = vector2.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    vec1.iter().zip(vec2.iter()).map(|(x, y)| x * y).sum()
+}
+
+pub fn diagonal_vs_sum(vector1: &mut Vec<RistrettoPoint>, vector2: &mut Vec<Scalar>) -> RistrettoPoint {
+    if vector1.len() % 2 !=0 {
+        vector1.insert(0, RistrettoPoint::identity());
+        vector2.insert(0, Scalar::from(0u8));
+    }
+    let vec1:Vec<RistrettoPoint> = vector1.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
+    let vec2:Vec<Scalar> = vector2.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    vec1.iter().zip(vec2.iter()).map(|(x, y)| x * y).sum()
+}
+
+pub fn diagonal_sv_sum(vector1: &mut Vec<Scalar>, vector2: &mut Vec<RistrettoPoint> ) -> RistrettoPoint {
+    if vector1.len() % 2 !=0 {
+        vector1.insert(0, Scalar::from(0u8));
+        vector2.insert(0, RistrettoPoint::identity());
+    }
+    let vec1:Vec<Scalar> = vector1.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
+    let vec2:Vec<RistrettoPoint> = vector2.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    vec1.iter().zip(vec2.iter()).map(|(x, y)| x * y).sum()
 }
 
 pub fn vector_sub(vector1: &Vec<Scalar>, vector2: &Vec<Scalar>) -> Vec<Scalar> {
