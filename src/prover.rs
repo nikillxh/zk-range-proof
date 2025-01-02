@@ -52,7 +52,7 @@ pub struct BulletProof {
 }
 
 impl BulletProof {
-    pub fn init(u_random: Scalar, [left, right]: [RistrettoPoint; 2], poly: Polycommitment, points: GlobalPoints) -> Self {
+    pub fn init(u_random: Scalar, [left, right]: [RistrettoPoint; 2], poly: Polycommitment, points: &GlobalPoints) -> Self {
         let commit_p = (left * u_random * u_random) + (right * u_random.invert() * u_random.invert()) + poly.commit_c() + (poly.tu() * points.g_i());
         let g_basis_fold = fold_vector(points.g_basis().clone(), u_random.invert());
         let h_basis_fold = fold_vector(points.h_basis().clone(), u_random);
@@ -71,21 +71,21 @@ impl BulletProof {
         }
     }
 
-    pub fn compute_diagonal([mut left, mut right]: [Vec<Scalar>; 2], points: GlobalPoints) -> [RistrettoPoint; 2] {
+    pub fn compute_diagonal([mut left, mut right]: [Vec<Scalar>; 2], points: &GlobalPoints) -> [RistrettoPoint; 2] {
         let new_left = (diagonal_ss_sum(&mut left, &mut right) * points.g_i()) +
             (diagonal_sv_sum(&mut left, &mut points.g_basis())) + (diagonal_sv_sum(&mut right, &mut points.h_basis()));
         let new_right = (diagonal_ss_sum(&mut right, &mut left) * points.g_i()) +
             (diagonal_vs_sum(&mut points.g_basis(), &mut left)) + (diagonal_vs_sum(&mut points.h_basis(), &mut right));
-            
+        
         [new_left, new_right]
     }
 
-    pub fn a_fold(&mut self, u: Scalar) -> () {
-        self.a = fold_scalar(self.a(), u);
+    pub fn a_fold(&mut self) -> () {
+        self.a = fold_scalar(self.a(), self.u_verifier);
     }
 
-    pub fn b_fold(&mut self, u: Scalar) -> () {
-        self.b = fold_scalar(self.b(), u);
+    pub fn b_fold(&mut self) -> () {
+        self.b = fold_scalar(self.b(), self.u_verifier);
     }
 
     pub fn compute(&mut self, u_random: Scalar) -> () {
@@ -102,7 +102,7 @@ impl BulletProof {
     }
 
     pub fn b(&self) -> Vec<Scalar> {
-        self.a.clone()
+        self.b.clone()
     }
 
     pub fn left(&self) -> RistrettoPoint {
@@ -115,7 +115,7 @@ impl BulletProof {
 }
 
 impl T1T2commitment {
-    pub fn init(salt: Salts, asv: ASVcommitment, y: u64, z: u64, count: usize, points: GlobalPoints) -> Self {
+    pub fn init(salt: &Salts, asv: ASVcommitment, y: u64, z: u64, count: usize, points: &GlobalPoints) -> Self {
         let yn = gen_scalars(count, y);
         let n2 = n2_gen(count);
         let [al, ar, sl, sr] = asv.polynomial_const();
@@ -183,8 +183,8 @@ impl Polycommitment {
         }
     }
 
-    pub fn to_verifier(&self) -> ([Vec<Scalar>;2], [Scalar; 3]) {
-        ([self.l.clone(), self.r.clone()], [self.t, self.pi_lr, self.pi_t])
+    pub fn bullet_verifier(&self) -> (RistrettoPoint, [Scalar; 3]) {
+        (self.commit_c, [self.t, self.pi_lr, self.pi_t])
     }
 
     pub fn lu(&self) -> Vec<Scalar> {
@@ -248,7 +248,7 @@ impl Salts {
 }
 
 impl ASVcommitment {
-    pub fn compute(v: u64, range: usize, salt: Salts, points: GlobalPoints) -> Self {
+    pub fn compute(v: u64, range: usize, salt: &Salts, points: &GlobalPoints) -> Self {
         let salt_alpha = salt.alpha();
         let salt_beta = salt.beta();
         let salt_gamma = salt.gamma();

@@ -1,10 +1,21 @@
 use curve25519_dalek::{RistrettoPoint, Scalar};
-use crate::{generator::GlobalPoints, prover::BulletProof, verifier::{self, BulletVerify}};
 
-pub fn prove_commitments_log(commit_c: RistrettoPoint, points: GlobalPoints, prover: BulletProof, verifier: BulletVerify) -> bool {
-    if prover.a().len() == 1 {
+use crate::generator::GlobalPoints;
+use crate::prover::BulletProof;
+use crate::verifier::{Generatives, BulletVerify};
 
-    } else
+pub fn prove_commitments_log(count: usize, points: GlobalPoints, mut prover: BulletProof, mut verifier: BulletVerify, gen: Generatives) -> () {
+    if prover.a().len() <= 1 {
+        verifier.verify([prover.a(), prover.b()], count, points, gen);
+    } else {
+        let [left, right] = BulletProof::compute_diagonal([prover.a().clone(), prover.b().clone()], &points);
+        let u_random = verifier.u_update();
+        verifier.compute([left, right]);
+        prover.compute(u_random);
+        prover.a_fold();
+        prover.b_fold();
+        prove_commitments_log(count, points, prover, verifier, gen);
+    }
 }
 
 pub fn fold_scalar(mut a: Vec<Scalar>, u: Scalar) -> Vec<Scalar> {
