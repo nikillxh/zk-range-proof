@@ -23,6 +23,7 @@ pub fn fold_scalar(a: &mut Vec<Scalar>, u: Scalar) -> Vec<Scalar> {
     if a.len() % 2 !=0 {
         a.insert(0, Scalar::from(0u8));
     }
+    
     let folded: Vec<Scalar> = a.chunks(2).map(|chunk| {
         match chunk {
             [x, y] => (x * u) + (y * u.invert()),

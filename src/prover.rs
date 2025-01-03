@@ -74,9 +74,9 @@ impl BulletProof {
 
     pub fn compute_diagonal([mut left, mut right]: [Vec<Scalar>; 2], [mut g_basis, mut h_basis]: [&mut Vec<RistrettoPoint>; 2], g_i: RistrettoPoint) -> [RistrettoPoint; 2] {
         let new_left = (diagonal_ss_sum(&mut left, &mut right) * g_i) +
-            (diagonal_sv_sum(&mut left, &mut g_basis)) + (diagonal_sv_sum(&mut right, &mut h_basis));
+            (diagonal_sv_sum(&mut left, &mut g_basis)) + (diagonal_vs_sum(&mut h_basis, &mut right));
         let new_right = (diagonal_ss_sum(&mut right, &mut left) * g_i) +
-            (diagonal_vs_sum(&mut g_basis, &mut left)) + (diagonal_vs_sum(&mut h_basis, &mut right));
+            (diagonal_vs_sum(&mut g_basis, &mut left)) + (diagonal_sv_sum(&mut right, &mut h_basis));
         
         [new_left, new_right]
     }

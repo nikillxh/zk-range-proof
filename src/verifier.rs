@@ -104,7 +104,6 @@ impl BulletVerify {
         let z2 = Scalar::from(gen.z()) * Scalar::from(gen.z());
         let delta: Scalar = ((Scalar::from(gen.z()) - z2) * gen.yn().iter().sum::<Scalar>()) 
             - (z2 * Scalar::from(gen.z()) * n2.iter().sum::<Scalar>());
-
         let eqn1lhs = self.commit_p;
         let eqn1rhs = (a[0] * self.g_basis_fold[0]) + (b[0] * self.h_basis_fold[0]) + (a[0] * b[0] * self.g_i);
         let eqn2lhs = self.commit_a + (self.commit_s * gen.u()) + inner_product(&vec![Scalar::from(0u64) - self.z; count], &points.g_basis())

@@ -1,5 +1,5 @@
 use bullerproof::prove_commitments_log;
-use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::{scalar::Scalar, traits::Identity};
 use curve25519_dalek::ristretto::RistrettoPoint;
 use operations::{to_bin, vector_sub, scalarize};
 use generator::GlobalPoints;
@@ -17,7 +17,7 @@ fn main() {
     // Prover
     let prover_value: u64 = 63;
     let al = scalarize(&mut to_bin(prover_value));
-    let range = 7;
+    let range = 8; // 2^n for Bulletproof Verification
     let ar = vector_sub( &al, &vec![Scalar::from(1u32)]);
     let salt = Salts::init();
 
@@ -42,14 +42,6 @@ fn main() {
     let poly = Polycommitment::compute(u, salt, &asv, &t1t2, y, z, range, &points);
 
 
-    // Linear Verification
-
-    // Verifier
-    let linear_verifier = LinearVerify::init_linear(range, &points, &poly, asv.to_verifier(), &gen, &t1t2);
-
-    linear_verifier.verify();
-
-
     // Bulletproof Verification
 
     // Prover
@@ -64,6 +56,10 @@ fn main() {
     // Prove commitments log
     prove_commitments_log(range, &points, &mut prover, &mut verifier, &gen);
 
+    // // Linear Verification
 
-    
+    // // Verifier
+    // let linear_verifier = LinearVerify::init_linear(range, &points, &poly, asv.to_verifier(), &gen, &t1t2);
+
+    // linear_verifier.verify();
 }
