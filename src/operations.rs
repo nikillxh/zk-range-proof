@@ -53,8 +53,8 @@ pub fn diagonal_ss_sum(vector1: &mut Vec<Scalar>, vector2: &mut Vec<Scalar> ) ->
         vector1.insert(0, Scalar::from(0u8));
         vector2.insert(0, Scalar::from(0u8));
     }
-    let vec1:Vec<Scalar> = vector1.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
-    let vec2:Vec<Scalar> = vector2.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    let vec1:Vec<Scalar> = vector1.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    let vec2:Vec<Scalar> = vector2.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
     vec1.iter().zip(vec2.iter()).map(|(x, y)| x * y).sum()
 }
 
@@ -63,8 +63,8 @@ pub fn diagonal_vs_sum(vector1: &mut Vec<RistrettoPoint>, vector2: &mut Vec<Scal
         vector1.insert(0, RistrettoPoint::identity());
         vector2.insert(0, Scalar::from(0u8));
     }
-    let vec1:Vec<RistrettoPoint> = vector1.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
-    let vec2:Vec<Scalar> = vector2.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    let vec1:Vec<RistrettoPoint> = vector1.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    let vec2:Vec<Scalar> = vector2.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
     vec1.iter().zip(vec2.iter()).map(|(x, y)| x * y).sum()
 }
 
@@ -73,8 +73,8 @@ pub fn diagonal_sv_sum(vector1: &mut Vec<Scalar>, vector2: &mut Vec<RistrettoPoi
         vector1.insert(0, Scalar::from(0u8));
         vector2.insert(0, RistrettoPoint::identity());
     }
-    let vec1:Vec<Scalar> = vector1.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
-    let vec2:Vec<RistrettoPoint> = vector2.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    let vec1:Vec<Scalar> = vector1.iter().enumerate().filter(|(i,_)| i % 2 == 0).map(|(_, &x)| x).collect();
+    let vec2:Vec<RistrettoPoint> = vector2.iter().enumerate().filter(|(i,_)| i % 2 != 0).map(|(_, &x)| x).collect();
     vec1.iter().zip(vec2.iter()).map(|(x, y)| x * y).sum()
 }
 

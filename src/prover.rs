@@ -31,6 +31,7 @@ pub struct Polycommitment {
     pi_lr: Scalar,
     pi_t: Scalar,
     commit_c: RistrettoPoint,
+    y_inv_h: Vec<RistrettoPoint>
 }
 
 pub struct T1T2commitment {
@@ -52,12 +53,12 @@ pub struct BulletProof {
 }
 
 impl BulletProof {
-    pub fn init(u_random: Scalar, [left, right]: [RistrettoPoint; 2], poly: Polycommitment, points: &GlobalPoints) -> Self {
+    pub fn init(u_random: Scalar, [left, right]: [RistrettoPoint; 2], poly: &Polycommitment, points: &GlobalPoints) -> Self {
         let commit_p = (left * u_random * u_random) + (right * u_random.invert() * u_random.invert()) + poly.commit_c() + (poly.tu() * points.g_i());
-        let g_basis_fold = fold_vector(points.g_basis().clone(), u_random.invert());
-        let h_basis_fold = fold_vector(points.h_basis().clone(), u_random);
-        let a = fold_scalar(poly.lu(), u_random);
-        let b = fold_scalar(poly.ru(), u_random);
+        let g_basis_fold = fold_vector(&mut points.g_basis().clone(), u_random.invert());
+        let h_basis_fold = fold_vector(&mut poly.y_inv_h(), u_random);
+        let a = fold_scalar(&mut poly.lu(), u_random);
+        let b = fold_scalar(&mut poly.ru(), u_random.invert());
         Self {
             left,
             right,
@@ -71,30 +72,30 @@ impl BulletProof {
         }
     }
 
-    pub fn compute_diagonal([mut left, mut right]: [Vec<Scalar>; 2], points: &GlobalPoints) -> [RistrettoPoint; 2] {
-        let new_left = (diagonal_ss_sum(&mut left, &mut right) * points.g_i()) +
-            (diagonal_sv_sum(&mut left, &mut points.g_basis())) + (diagonal_sv_sum(&mut right, &mut points.h_basis()));
-        let new_right = (diagonal_ss_sum(&mut right, &mut left) * points.g_i()) +
-            (diagonal_vs_sum(&mut points.g_basis(), &mut left)) + (diagonal_vs_sum(&mut points.h_basis(), &mut right));
+    pub fn compute_diagonal([mut left, mut right]: [Vec<Scalar>; 2], [mut g_basis, mut h_basis]: [&mut Vec<RistrettoPoint>; 2], g_i: RistrettoPoint) -> [RistrettoPoint; 2] {
+        let new_left = (diagonal_ss_sum(&mut left, &mut right) * g_i) +
+            (diagonal_sv_sum(&mut left, &mut g_basis)) + (diagonal_sv_sum(&mut right, &mut h_basis));
+        let new_right = (diagonal_ss_sum(&mut right, &mut left) * g_i) +
+            (diagonal_vs_sum(&mut g_basis, &mut left)) + (diagonal_vs_sum(&mut h_basis, &mut right));
         
         [new_left, new_right]
     }
 
     pub fn a_fold(&mut self) -> () {
-        self.a = fold_scalar(self.a(), self.u_verifier);
+        self.a = fold_scalar(&mut self.a(), self.u_verifier);
     }
 
     pub fn b_fold(&mut self) -> () {
-        self.b = fold_scalar(self.b(), self.u_verifier);
+        self.b = fold_scalar(&mut self.b(), self.u_verifier.invert());
     }
 
     pub fn compute(&mut self, u_random: Scalar) -> () {
         self.u_verifier = u_random;
         self.commit_p = (self.left * self.u_verifier * self.u_verifier) + (self.right * self.u_verifier.invert() * self.u_verifier.invert()) + self.commit_p;
-        self.g_basis_fold = fold_vector(self.g_basis_fold.clone(), self.u_verifier);
-        self.h_basis_fold = fold_vector(self.h_basis_fold.clone(), self.u_verifier);
-        self.a = fold_scalar(self.a(), self.u_verifier);
-        self.b = fold_scalar(self.b(), self.u_verifier);
+        self.g_basis_fold = fold_vector(&mut self.g_basis_fold.clone(), self.u_verifier.invert());
+        self.h_basis_fold = fold_vector(&mut self.h_basis_fold.clone(), self.u_verifier);
+        self.a_fold();
+        self.b_fold();
     }
 
     pub fn a(&self) -> Vec<Scalar> {
@@ -105,27 +106,37 @@ impl BulletProof {
         self.b.clone()
     }
 
-    pub fn left(&self) -> RistrettoPoint {
-        self.left
+    pub fn update_diagonals(&mut self, [left, right]: [RistrettoPoint; 2]) -> () {
+        self.left = left;
+        self.right = right;
     }
 
-    pub fn right(&self) -> RistrettoPoint {
-        self.right
+    pub fn h_basis(&self) -> Vec<RistrettoPoint> {
+        self.h_basis_fold.clone()
+    }
+
+    pub fn g_basis(&self) -> Vec<RistrettoPoint> {
+        self.g_basis_fold.clone()
+    }
+
+    pub fn commit_p(&self) -> RistrettoPoint {
+        self.commit_p
     }
 }
 
 impl T1T2commitment {
-    pub fn init(salt: &Salts, asv: ASVcommitment, y: u64, z: u64, count: usize, points: &GlobalPoints) -> Self {
+    pub fn init(salt: &Salts, asv: &ASVcommitment, y: u64, z: u64, count: usize, points: &GlobalPoints) -> Self {
         let yn = gen_scalars(count, y);
         let n2 = n2_gen(count);
+        let z2 = Scalar::from(z) * Scalar::from(z);
         let [al, ar, sl, sr] = asv.polynomial_const();
-
+        
         let t0: Scalar= hadamard_multiply(&vector_sub(&al, &vec![Scalar::from(z); count]),
             &vector_add(&vector_add(&hadamard_multiply(&yn, &ar), &vec_scalar_mul(&yn, &Scalar::from(z))), 
-            &vec_scalar_mul(&n2, &Scalar::from(z.pow(2))))).iter().sum();
+            &vec_scalar_mul(&n2, &z2))).iter().sum();
         let t1: Scalar = hadamard_multiply(&vector_sub(&al, &vec![Scalar::from(z); count]), &hadamard_multiply(&yn, &sr)).iter().sum::<Scalar>()
             + hadamard_multiply(&vector_add(&hadamard_multiply(&yn, &vector_add(&ar, &vec![Scalar::from(z); count])),
-            &vec_scalar_mul(&n2, &Scalar::from(z.pow(2)))), &sl).iter().sum::<Scalar>();
+            &vec_scalar_mul(&n2, &z2)), &sl).iter().sum::<Scalar>();
         let t2: Scalar = hadamard_multiply(&sl, &hadamard_multiply(&yn, &sr)).iter().sum();
 
         let commit_t1 = (t1 * points.g_i()) + (salt.tau1() * points.b_i());
@@ -153,14 +164,15 @@ impl T1T2commitment {
 }
 
 impl Polycommitment {
-    pub fn compute(u: Scalar, salt: Salts, asv: ASVcommitment, tx: T1T2commitment, y: u64, z: u64, count: usize, points: GlobalPoints) -> Self {
+    pub fn compute(u: Scalar, salt: Salts, asv: &ASVcommitment, tx: &T1T2commitment, y: u64, z: u64, count: usize, points: &GlobalPoints) -> Self {
         let yn = gen_scalars(count, y);
         let y_inv_h = points_hadamard_multiply(&inv_vector(&yn), &points.h_basis());
         let n2 = n2_gen(count);
+        let z2 = Scalar::from(z) * Scalar::from(z);
         let [al, ar, sl, sr] = asv.polynomial_const();
         let l = vector_add(&vector_sub(&al, &vec![Scalar::from(z); count]), &vec_scalar_mul(&sl, &u));
         let r = vector_add(&vector_add(&hadamard_multiply(&yn, &vector_add(&ar, &vec![Scalar::from(z); count])),
-            &vec_scalar_mul(&n2, &Scalar::from(z.pow(2)))), &hadamard_multiply(&yn, &vec_scalar_mul(&sr, &u)));
+            &vec_scalar_mul(&n2, &z2)), &hadamard_multiply(&yn, &vec_scalar_mul(&sr, &u)));
         println!("Computed lu, ru");
 
         let [t0, t1, t2] = tx.access_tx();
@@ -168,10 +180,11 @@ impl Polycommitment {
         println!("Computed tu");
 
         let pi_lr = salt.alpha() + (salt.beta() * u);
-        let pi_t = (Scalar::from(z.pow(2)) * salt.gamma()) + (salt.tau1() * u) + (salt.tau2() * u * u);
+        let pi_t = (z2 * salt.gamma()) + (salt.tau1() * u) + (salt.tau2() * u * u);
         println!("Computed all polynomial terms");
 
         let commit_c = inner_product(&l, &points.g_basis()) + inner_product(&r, &y_inv_h);
+        assert_eq!(hadamard_multiply(&l, &r).iter().sum::<Scalar>(), t, "Prover system mess up!!");
 
         Self {
             l,
@@ -180,6 +193,7 @@ impl Polycommitment {
             pi_lr,
             pi_t,
             commit_c,
+            y_inv_h,
         }
     }
 
@@ -209,6 +223,10 @@ impl Polycommitment {
 
     pub fn commit_c(&self) -> RistrettoPoint {
         self.commit_c
+    }
+
+    pub fn y_inv_h(&self) -> Vec<RistrettoPoint> {
+        self.y_inv_h.clone()
     }
 }
 
