@@ -81,6 +81,10 @@ sha2 = "0.10"
 - `operations.rs`: Contains utility functions for operations like vector addition, scalar folding, etc.
 - `bulletproof.rs`: Implements the Bulletproof protocol for range proof verification.
 
+## References
+- **Rareskills ZK-Book**: https://www.rareskills.io/zk-book
+- **Bulletproofs**: https://eprint.iacr.org/2017/1066.pdf
+
 ## License
 
 This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
